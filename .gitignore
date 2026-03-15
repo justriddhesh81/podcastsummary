@@ -28,4 +28,3 @@ target/
 Thumbs.db
 
 *.mp3
-python-service/*.mp3
