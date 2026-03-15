@@ -26,3 +26,6 @@ target/
 # =====================
 .DS_Store
 Thumbs.db
+
+*.mp3
+python-service/*.mp3
