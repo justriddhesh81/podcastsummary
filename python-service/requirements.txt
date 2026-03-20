@@ -1,7 +1,11 @@
 fastapi==0.110.0
 uvicorn==0.27.1
+
 yt-dlp
 openai-whisper
+
 transformers==4.36.2
+tokenizers==0.15.2
+
 sentencepiece==0.1.99
 torch
