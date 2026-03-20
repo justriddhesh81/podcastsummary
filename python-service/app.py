@@ -18,7 +18,7 @@ app.add_middleware(
 
 print("Loading Whisper model...")
 
-whisper_model = whisper.load_model("small")
+whisper_model = whisper.load_model("tiny")
 
 AVAILABLE_MODELS = ["bart", "flan"]
 
