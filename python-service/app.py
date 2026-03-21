@@ -89,7 +89,10 @@ def summarize(video_id: str, model: str = "bart"):
         print("Detected language:", language)
 
         print("Summarizing...")
-        summary = summarize_podcast(segments, model)
+        summary = {
+            "overview": "Summary temporarily disabled due to memory limits",
+            "sections": []
+        }
 
         return {
             "video_id": video_id,
