@@ -57,7 +57,11 @@ def download_audio(video_id):
 
 def transcribe_audio(audio_path):
 
-    result = whisper_model.transcribe(
+    import whisper  # import inside
+
+    model = whisper.load_model("tiny")  # load only when needed
+
+    result = model.transcribe(
         audio_path,
         task="translate",
         fp16=False,
