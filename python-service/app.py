@@ -1,7 +1,6 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-import yt_dlp
-import whisper
+from youtube_transcript_api import YouTubeTranscriptApi
 import os
 
 from summarizer import summarize_podcast
@@ -16,87 +15,42 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-print("Loading Whisper model...")
-
-whisper_model = whisper.load_model("tiny")
-
-AVAILABLE_MODELS = ["bart", "flan"]
-
 
 @app.get("/")
 def home():
     return {"message": "Podcast Summarization API Running"}
 
 
-def download_audio(video_id):
+# ✅ NEW: Get transcript directly (NO WHISPER)
+def get_transcript(video_id):
 
-    url = f"https://www.youtube.com/watch?v={video_id}"
+    try:
+        transcript = YouTubeTranscriptApi.get_transcript(video_id)
 
-    output_file = f"{video_id}.mp3"
-
-    ydl_opts = {
-        "format": "bestaudio/best",
-        "outtmpl": f"{video_id}.%(ext)s",
-        "postprocessors": [
+        segments = [
             {
-                "key": "FFmpegExtractAudio",
-                "preferredcodec": "mp3"
+                "text": t["text"],
+                "start": t["start"],
+                "end": t["start"] + t["duration"]
             }
-        ],
-        "quiet": False
-    }
+            for t in transcript
+        ]
 
-    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-        ydl.download([url])
+        return segments, "en"
 
-    if not os.path.exists(output_file):
-        raise Exception("Audio download failed")
-
-    return output_file
-
-
-def transcribe_audio(audio_path):
-
-    import whisper  # import inside
-
-    model = whisper.load_model("tiny")  # load only when needed
-
-    result = model.transcribe(
-        audio_path,
-        task="translate",
-        fp16=False,
-        temperature=0
-    )
-
-    segments = result["segments"]
-    language = result["language"]
-
-    return segments, language
+    except Exception:
+        raise HTTPException(status_code=400, detail="Transcript not available")
 
 
 @app.get("/summarize/{video_id}")
-def summarize(video_id: str, model: str = "bart"):
-
-    audio_path = None
+def summarize(video_id: str):
 
     try:
-
-        if model not in AVAILABLE_MODELS:
-            raise HTTPException(status_code=400, detail="Invalid model")
-
-        print("Downloading audio...")
-        audio_path = download_audio(video_id)
-
-        print("Transcribing...")
-        segments, language = transcribe_audio(audio_path)
-
-        print("Detected language:", language)
+        print("Fetching transcript...")
+        segments, language = get_transcript(video_id)
 
         print("Summarizing...")
-        summary = {
-            "overview": "Summary temporarily disabled due to memory limits",
-            "sections": []
-        }
+        summary = summarize_podcast(segments)
 
         return {
             "video_id": video_id,
@@ -106,13 +60,5 @@ def summarize(video_id: str, model: str = "bart"):
         }
 
     except Exception as e:
-
         print("FULL ERROR:", e)
-
         raise HTTPException(status_code=500, detail=str(e))
-
-    finally:
-
-        if audio_path and os.path.exists(audio_path):
-            os.remove(audio_path)
-            print("Deleted temporary audio file")
