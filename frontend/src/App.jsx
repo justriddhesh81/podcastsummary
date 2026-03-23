@@ -47,7 +47,7 @@ function App() {
     setSelectedVideo(video);
 
     const response = await fetch(
-      `http://localhost:8000/summarize/${video.id}?model=${selectedModel}`
+      `https://podcastsummary.onrender.com/summarize/${video.id}`
     );
 
     const data = await response.json();
