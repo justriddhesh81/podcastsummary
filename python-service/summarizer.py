@@ -4,22 +4,27 @@ from openai import OpenAI
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 
-def summarize_podcast(segments, model_key="gpt-3.5-turbo"):
+def summarize_podcast(segments, model_key="gpt-4o-mini"):
 
-    # Combine transcript
+    # Limit segments (VERY IMPORTANT for memory)
+    segments = segments[:50]
+
     full_text = " ".join([seg["text"] for seg in segments])
-
-    # Trim if too long (important)
-    full_text = full_text[:12000]
+    full_text = full_text[:8000]
 
     prompt = f"""
-    You are an AI that summarizes podcasts.
+    Summarize this podcast transcript.
 
-    Provide:
-    1. A clear overview (5-6 lines)
-    2. Section-wise key points (with timestamps if possible)
+    Return STRICT JSON in this format:
+    {{
+      "overview": "5-6 line summary",
+      "sections": [
+        {{"timestamp": 30, "summary": "point"}},
+        {{"timestamp": 120, "summary": "point"}}
+      ]
+    }}
 
-    Podcast Transcript:
+    Transcript:
     {full_text}
     """
 
@@ -31,7 +36,13 @@ def summarize_podcast(segments, model_key="gpt-3.5-turbo"):
 
     output = response.choices[0].message.content
 
-    return {
-        "overview": output,
-        "sections": []
-    }
+    import json
+
+    try:
+        parsed = json.loads(output)
+        return parsed
+    except:
+        return {
+            "overview": output,
+            "sections": []
+        }
